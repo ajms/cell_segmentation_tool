@@ -695,6 +695,44 @@ body::before {
   border-radius: var(--radius-sm);
 }
 
+.selection-count {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--color-accent);
+  opacity: 0.9;
+}
+
+.merge-bar {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-accent-muted);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.merge-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-bg-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.merge-button:hover {
+  background: var(--color-accent-hover);
+}
+
+.merge-button svg {
+  width: 16px;
+  height: 16px;
+}
+
 .visibility-toggle {
   display: flex;
   align-items: center;

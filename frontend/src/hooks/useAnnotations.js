@@ -4,6 +4,7 @@ import {
   createAnnotation,
   deleteAnnotation as deleteAnnotationApi,
   updateAnnotation as updateAnnotationApi,
+  mergeAnnotations as mergeAnnotationsApi,
 } from '../utils/api';
 
 export function useAnnotations(imageId) {
@@ -115,6 +116,35 @@ export function useAnnotations(imageId) {
     }
   }, [annotations]);
 
+  const mergeAnnotations = useCallback(async (annotationIds, classId, className) => {
+    if (!imageId || annotationIds.length < 2) return null;
+
+    // Store the annotations being merged for undo
+    const mergedAnnotations = annotations.filter((a) => annotationIds.includes(a.id));
+
+    try {
+      const merged = await mergeAnnotationsApi(annotationIds, classId, className);
+
+      // Remove old annotations and add merged one
+      setAnnotations((prev) => [
+        ...prev.filter((a) => !annotationIds.includes(a.id)),
+        merged,
+      ]);
+
+      // Add to undo stack
+      setUndoStack((prev) => [
+        ...prev,
+        { type: 'merge', mergedAnnotations, newAnnotation: merged },
+      ]);
+      setRedoStack([]);
+
+      return merged;
+    } catch (err) {
+      setError(err.message || 'Failed to merge annotations');
+      throw err;
+    }
+  }, [imageId, annotations]);
+
   const undo = useCallback(async () => {
     if (undoStack.length === 0) return;
 
@@ -149,6 +179,25 @@ export function useAnnotations(imageId) {
         setAnnotations((prev) =>
           prev.map((a) => (a.id === action.newAnnotation.id ? updated : a))
         );
+      } else if (action.type === 'merge') {
+        // Undo merge = delete merged, recreate originals
+        await deleteAnnotationApi(action.newAnnotation.id);
+        const recreated = [];
+        for (const ann of action.mergedAnnotations) {
+          const newAnn = await createAnnotation(imageId, {
+            class_id: ann.class_id,
+            class_name: ann.class_name,
+            segmentation: ann.segmentation,
+            bbox: ann.bbox,
+            area: ann.area,
+          });
+          recreated.push(newAnn);
+        }
+        setAnnotations((prev) => [
+          ...prev.filter((a) => a.id !== action.newAnnotation.id),
+          ...recreated,
+        ]);
+        action.mergedAnnotations = recreated;
       }
 
       setRedoStack((prev) => [...prev, action]);
@@ -190,6 +239,19 @@ export function useAnnotations(imageId) {
         setAnnotations((prev) =>
           prev.map((a) => (a.id === action.oldAnnotation.id ? updated : a))
         );
+      } else if (action.type === 'merge') {
+        // Redo merge = delete originals, merge again
+        const annotationIds = action.mergedAnnotations.map((a) => a.id);
+        const merged = await mergeAnnotationsApi(
+          annotationIds,
+          action.newAnnotation.class_id,
+          action.newAnnotation.class_name
+        );
+        setAnnotations((prev) => [
+          ...prev.filter((a) => !annotationIds.includes(a.id)),
+          merged,
+        ]);
+        action.newAnnotation = merged;
       }
 
       setUndoStack((prev) => [...prev, action]);
@@ -205,6 +267,7 @@ export function useAnnotations(imageId) {
     saveAnnotation,
     deleteAnnotation,
     updateAnnotation,
+    mergeAnnotations,
     undo,
     redo,
     canUndo: undoStack.length > 0,

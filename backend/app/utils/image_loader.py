@@ -1,6 +1,5 @@
 import re
 import zipfile
-from io import BytesIO
 from pathlib import Path
 from typing import TypedDict
 

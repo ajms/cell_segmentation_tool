@@ -15,7 +15,7 @@ export function ImageCanvas({
   preview,
   points,
   onAddPoint,
-  selectedAnnotation,
+  selectedAnnotations = [],
   onSelectAnnotation,
   showAnnotations = true,
   currentClassId = 1,
@@ -89,7 +89,7 @@ export function ImageCanvas({
       overlayCtx.scale(scale, scale);
 
       annotations.forEach((ann) => {
-        const isSelected = ann.id === selectedAnnotation;
+        const isSelected = selectedAnnotations.includes(ann.id);
         const color = getClassColor(ann.class_id);
         const fillAlpha = isSelected ? 0.5 : 0.3;
 
@@ -147,7 +147,7 @@ export function ImageCanvas({
     annotations,
     preview,
     points,
-    selectedAnnotation,
+    selectedAnnotations,
     showAnnotations,
     currentClassId,
   ]);
@@ -228,14 +228,14 @@ export function ImageCanvas({
     for (const ann of annotations) {
       for (const polygon of ann.segmentation) {
         if (isPointInPolygon(x, y, polygon)) {
-          onSelectAnnotation?.(ann.id);
+          onSelectAnnotation?.(ann.id, e.shiftKey);
           return;
         }
       }
     }
 
     // Click not on annotation - deselect
-    onSelectAnnotation?.(null);
+    onSelectAnnotation?.(null, e.shiftKey);
   };
 
   // Prevent context menu

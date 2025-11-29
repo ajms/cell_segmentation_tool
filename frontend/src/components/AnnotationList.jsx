@@ -2,18 +2,26 @@ import { getClassColor } from '../utils/canvas';
 
 export function AnnotationList({
   annotations,
-  selectedId,
+  selectedIds = [],
   onSelect,
   onDelete,
+  onMerge,
   visible,
   onToggleVisibility,
 }) {
+  const canMerge = selectedIds.length >= 2;
+
   return (
     <div className="annotation-list">
       <div className="annotation-list-header">
         <h3>Annotations</h3>
         <div className="annotation-controls">
           <span className="annotation-count">{annotations.length}</span>
+          {selectedIds.length > 0 && (
+            <span className="selection-count" title="Selected annotations">
+              ({selectedIds.length} selected)
+            </span>
+          )}
           <button
             className={`visibility-toggle ${visible ? 'visible' : 'hidden'}`}
             onClick={onToggleVisibility}
@@ -34,6 +42,21 @@ export function AnnotationList({
         </div>
       </div>
 
+      {canMerge && (
+        <div className="merge-bar">
+          <button
+            className="merge-button"
+            onClick={onMerge}
+            title="Merge selected annotations (M)"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+            </svg>
+            Merge ({selectedIds.length})
+          </button>
+        </div>
+      )}
+
       <div className="annotation-items">
         {annotations.length === 0 ? (
           <div className="annotation-empty">
@@ -42,14 +65,14 @@ export function AnnotationList({
           </div>
         ) : (
           annotations.map((ann) => {
-            const isSelected = ann.id === selectedId;
+            const isSelected = selectedIds.includes(ann.id);
             const color = getClassColor(ann.class_id);
 
             return (
               <div
                 key={ann.id}
                 className={`annotation-item ${isSelected ? 'selected' : ''}`}
-                onClick={() => onSelect(isSelected ? null : ann.id)}
+                onClick={(e) => onSelect(ann.id, e.shiftKey)}
               >
                 <div
                   className="annotation-color"

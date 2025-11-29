@@ -110,9 +110,7 @@ class SAMModel:
         self._load_model()
 
         # Convert grayscale to RGB if needed
-        if len(image.shape) == 2:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-        elif image.shape[2] == 1:
+        if len(image.shape) == 2 or image.shape[2] == 1:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
 
         # Apply contrast enhancement for low-contrast microscopy images

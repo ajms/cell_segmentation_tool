@@ -20,7 +20,7 @@ function App() {
   const [selectedImageId, setSelectedImageId] = useState(null);
   const [imageInfo, setImageInfo] = useState(null);
   const [selectedClass, setSelectedClass] = useState(1);
-  const [selectedAnnotation, setSelectedAnnotation] = useState(null);
+  const [selectedAnnotations, setSelectedAnnotations] = useState([]);
   const [points, setPoints] = useState([]);
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
@@ -35,6 +35,7 @@ function App() {
     isLoading: annotationsLoading,
     saveAnnotation,
     deleteAnnotation,
+    mergeAnnotations,
     undo,
     redo,
     canUndo,
@@ -65,7 +66,7 @@ function App() {
     // Reset state for new image
     setPoints([]);
     sam.clearPreview();
-    setSelectedAnnotation(null);
+    setSelectedAnnotations([]);
   }, [selectedImageId]);
 
   // Segment when points change
@@ -122,11 +123,48 @@ function App() {
   }, [sam.preview, points, selectedClass, saveAnnotation]);
 
   const handleDeleteSelected = useCallback(() => {
-    if (selectedAnnotation) {
-      deleteAnnotation(selectedAnnotation);
-      setSelectedAnnotation(null);
+    if (selectedAnnotations.length > 0) {
+      selectedAnnotations.forEach((id) => deleteAnnotation(id));
+      setSelectedAnnotations([]);
     }
-  }, [selectedAnnotation, deleteAnnotation]);
+  }, [selectedAnnotations, deleteAnnotation]);
+
+  const handleSelectAnnotation = useCallback((id, shiftKey = false) => {
+    if (id === null) {
+      // Click outside - clear selection
+      setSelectedAnnotations([]);
+      return;
+    }
+
+    if (shiftKey) {
+      // Shift+click - toggle in multi-selection
+      setSelectedAnnotations((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      );
+    } else {
+      // Normal click - single selection
+      setSelectedAnnotations((prev) =>
+        prev.length === 1 && prev[0] === id ? [] : [id]
+      );
+    }
+  }, []);
+
+  const handleMerge = useCallback(async () => {
+    if (selectedAnnotations.length < 2) return;
+
+    const classInfo = DEFAULT_CLASSES.find((c) => c.id === selectedClass);
+
+    try {
+      await mergeAnnotations(
+        selectedAnnotations,
+        selectedClass,
+        classInfo?.name || `Class ${selectedClass}`
+      );
+      setSelectedAnnotations([]);
+    } catch (err) {
+      console.error('Failed to merge annotations:', err);
+    }
+  }, [selectedAnnotations, selectedClass, mergeAnnotations]);
 
   const handleSelectImage = useCallback((imageId) => {
     setSelectedImageId(imageId);
@@ -146,6 +184,7 @@ function App() {
     onToggleAnnotations: () => setShowAnnotations((v) => !v),
     onDeleteSelected: handleDeleteSelected,
     onRemoveLastPoint: handleRemoveLastPoint,
+    onMerge: handleMerge,
     enabled: !showHelp,
   });
 
@@ -198,8 +237,8 @@ function App() {
             preview={sam.preview}
             points={points}
             onAddPoint={handleAddPoint}
-            selectedAnnotation={selectedAnnotation}
-            onSelectAnnotation={setSelectedAnnotation}
+            selectedAnnotations={selectedAnnotations}
+            onSelectAnnotation={handleSelectAnnotation}
             showAnnotations={showAnnotations}
             currentClassId={selectedClass}
             brightness={brightness}
@@ -236,9 +275,10 @@ function App() {
           />
           <AnnotationList
             annotations={annotations}
-            selectedId={selectedAnnotation}
-            onSelect={setSelectedAnnotation}
+            selectedIds={selectedAnnotations}
+            onSelect={handleSelectAnnotation}
             onDelete={deleteAnnotation}
+            onMerge={handleMerge}
             visible={showAnnotations}
             onToggleVisibility={() => setShowAnnotations((v) => !v)}
           />

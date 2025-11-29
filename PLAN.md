@@ -33,6 +33,7 @@ Build a web-based UI for labeling cells in microscopy images using SAM2.1 (Segme
 - [x] Keyboard shortcuts for all actions
 - [ ] Next/Previous image navigation (partially implemented)
 - [x] **Prevent label overlaps** - Exclude existing annotations from new segmentations
+- [x] **Merge annotations** - Select multiple annotations and merge into one using polygon union
 
 ### Phase 4: Polish & Export - NOT STARTED
 
@@ -47,6 +48,25 @@ Implemented feature to ensure new segmentation masks don't overlap with existing
 - **Backend** (`backend/app/api/sam.py`): Added `existing_polygons` field to `SegmentRequest` and `polygons_to_mask()` helper function. After SAM prediction, the exclusion mask is subtracted from the result.
 - **Tests** (`backend/tests/test_sam_api.py`): Added tests verifying overlap exclusion works correctly.
 - **Frontend** (`frontend/src/utils/api.js`, `frontend/src/hooks/useSAM.js`, `frontend/src/App.jsx`): Updated to pass existing annotation polygons when calling segment.
+
+---
+
+## Completed: Merge Annotations (DONE)
+
+### Summary
+Implemented feature to merge multiple selected annotations into a single annotation using geometric polygon union (Shapely).
+
+### Usage
+1. **Select annotations**: Click an annotation to select it. Hold Shift and click additional annotations to multi-select.
+2. **Merge**: Press `M` key or click the "Merge" button that appears when 2+ annotations are selected.
+3. **Result**: Selected annotations are combined into one using polygon union. The merged annotation uses the currently selected class.
+
+### Implementation
+- **Backend** (`backend/app/api/annotations.py`): Added `POST /api/annotations/merge` endpoint. Uses Shapely to compute `unary_union` of all polygons.
+- **Backend** (`backend/app/utils/annotation_store.py`): Added `merge_annotations()` method with polygon-to-geometry conversion.
+- **Tests** (`backend/tests/test_annotations_api.py`): Added 5 tests for merge functionality (TDD approach).
+- **Frontend**: Multi-selection state (`selectedAnnotations` array), Shift+click handling, M keyboard shortcut, merge button UI.
+- **Dependency**: Added `shapely>=2.0.0` to `pyproject.toml`.
 
 ---
 

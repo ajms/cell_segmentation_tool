@@ -23,6 +23,12 @@ class AnnotationUpdate(BaseModel):
     class_name: str | None = None
 
 
+class MergeRequest(BaseModel):
+    annotation_ids: list[str]
+    class_id: int
+    class_name: str
+
+
 class Annotation(BaseModel):
     id: str
     image_id: str
@@ -32,6 +38,50 @@ class Annotation(BaseModel):
     bbox: list[float]
     area: float
     created_at: str
+
+
+@router.post("/merge", response_model=Annotation, status_code=status.HTTP_201_CREATED)
+async def merge_annotations(request: MergeRequest) -> Annotation:
+    """Merge multiple annotations into one using polygon union."""
+    if len(request.annotation_ids) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least 2 annotations are required to merge",
+        )
+
+    # Check if all annotations exist
+    for ann_id in request.annotation_ids:
+        if annotation_store.get_annotation_by_id(ann_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Annotation '{ann_id}' not found",
+            )
+
+    # Check if all annotations belong to the same image
+    image_ids = set()
+    for ann_id in request.annotation_ids:
+        ann = annotation_store.get_annotation_by_id(ann_id)
+        if ann:
+            image_ids.add(ann["image_id"])
+    if len(image_ids) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="All annotations must belong to the same image",
+        )
+
+    merged = annotation_store.merge_annotations(
+        annotation_ids=request.annotation_ids,
+        class_id=request.class_id,
+        class_name=request.class_name,
+    )
+
+    if merged is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to merge annotations",
+        )
+
+    return Annotation(**merged)
 
 
 @router.get("/{image_id}", response_model=list[Annotation])

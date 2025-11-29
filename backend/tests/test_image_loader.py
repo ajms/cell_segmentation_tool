@@ -1,8 +1,9 @@
-import pytest
 from pathlib import Path
 
+import pytest
+
+from app.config import IMAGES_DIR, RAW_ZIP_PATH
 from app.utils.image_loader import ImageLoader
-from app.config import RAW_ZIP_PATH, IMAGES_DIR
 
 
 @pytest.fixture

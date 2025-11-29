@@ -37,4 +37,11 @@ export const updateAnnotation = (annotationId, data) =>
 export const deleteAnnotation = (annotationId) =>
   api.delete(`/annotations/${annotationId}`);
 
+export const mergeAnnotations = (annotationIds, classId, className) =>
+  api.post('/annotations/merge', {
+    annotation_ids: annotationIds,
+    class_id: classId,
+    class_name: className,
+  }).then((res) => res.data);
+
 export default api;

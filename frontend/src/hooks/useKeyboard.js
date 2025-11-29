@@ -12,6 +12,7 @@ export function useKeyboard({
   onToggleAnnotations,
   onDeleteSelected,
   onRemoveLastPoint,
+  onMerge,
   enabled = true,
 }) {
   const handleKeyDown = useCallback(
@@ -101,6 +102,13 @@ export function useKeyboard({
         return;
       }
 
+      // Merge selected: M
+      if (key === 'm' && !isCtrl) {
+        e.preventDefault();
+        onMerge?.();
+        return;
+      }
+
       // Class selection: 1-9
       if (/^[1-9]$/.test(key) && !isCtrl && !isShift) {
         e.preventDefault();
@@ -121,6 +129,7 @@ export function useKeyboard({
       onToggleAnnotations,
       onDeleteSelected,
       onRemoveLastPoint,
+      onMerge,
     ]
   );
 
@@ -141,7 +150,9 @@ export const KEYBOARD_SHORTCUTS = [
   { category: 'Edit', shortcuts: [
     { key: 'Ctrl+Z', description: 'Undo' },
     { key: 'Ctrl+Y', description: 'Redo' },
-    { key: 'Delete', description: 'Delete selected annotation' },
+    { key: 'Delete', description: 'Delete selected annotation(s)' },
+    { key: 'M', description: 'Merge selected annotations' },
+    { key: 'Shift+Click', description: 'Multi-select annotations' },
   ]},
   { category: 'Navigation', shortcuts: [
     { key: 'N / \u2192', description: 'Next image' },

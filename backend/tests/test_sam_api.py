@@ -1,7 +1,6 @@
+
 import pytest
 from httpx import ASGITransport, AsyncClient
-from unittest.mock import patch
-import numpy as np
 
 from app.main import app
 from app.models.sam_model import MockSAMModel, set_sam_model

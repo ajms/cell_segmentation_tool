@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
+from app.config import IMAGES_DIR, RAW_ZIP_PATH
 from app.models.schemas import ImageInfo, ImageMetadata
 from app.utils.image_loader import ImageLoader
-from app.config import RAW_ZIP_PATH, IMAGES_DIR
 
 router = APIRouter(prefix="/images", tags=["images"])
 
