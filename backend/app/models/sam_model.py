@@ -33,12 +33,44 @@ class SAMModelProtocol(Protocol):
         ...
 
 
+def enhance_contrast(image: NDArray[np.uint8]) -> NDArray[np.uint8]:
+    """Apply CLAHE contrast enhancement for low-contrast microscopy images.
+
+    Args:
+        image: Input image (grayscale or RGB)
+
+    Returns:
+        Contrast-enhanced image
+    """
+    if len(image.shape) == 3:
+        # Convert to LAB color space for better contrast enhancement
+        lab = cv2.cvtColor(image, cv2.COLOR_RGB2LAB)
+        l_channel = lab[:, :, 0]
+
+        # Apply CLAHE to L channel
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        l_channel = clahe.apply(l_channel)
+
+        lab[:, :, 0] = l_channel
+        return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+    else:
+        # Grayscale image
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        return clahe.apply(image)
+
+
 class SAMModel:
     """Wrapper for SAM2 model."""
 
-    def __init__(self, checkpoint_dir: Path | None = None, model_cfg: str = "sam2.1_hiera_tiny"):
+    def __init__(
+        self,
+        checkpoint_dir: Path | None = None,
+        model_cfg: str = "sam2.1-hiera-small",
+        enhance_contrast: bool = True,
+    ):
         self.checkpoint_dir = checkpoint_dir
         self.model_cfg = model_cfg
+        self.enhance_contrast = enhance_contrast
         self._predictor = None
         self._current_image_shape: tuple[int, int] | None = None
 
@@ -48,13 +80,23 @@ class SAMModel:
             return
 
         try:
+            import torch
             from sam2.sam2_image_predictor import SAM2ImagePredictor
+
+            # Determine device: CUDA if available, otherwise CPU
+            if torch.cuda.is_available():
+                device = torch.device("cuda")
+                logger.info("Using CUDA device for SAM2")
+            else:
+                device = torch.device("cpu")
+                logger.info("CUDA not available, using CPU for SAM2 (this will be slower)")
 
             self._predictor = SAM2ImagePredictor.from_pretrained(
                 f"facebook/{self.model_cfg}",
                 cache_dir=self.checkpoint_dir,
+                device=device,
             )
-            logger.info(f"Loaded SAM2 model: {self.model_cfg}")
+            logger.info(f"Loaded SAM2 model: {self.model_cfg} on {device}")
         except Exception as e:
             logger.error(f"Failed to load SAM2 model: {e}")
             raise
@@ -72,6 +114,10 @@ class SAMModel:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
         elif image.shape[2] == 1:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+        # Apply contrast enhancement for low-contrast microscopy images
+        if self.enhance_contrast:
+            image = enhance_contrast(image)
 
         self._current_image_shape = (image.shape[0], image.shape[1])
         self._predictor.set_image(image)
@@ -101,7 +147,34 @@ class SAMModel:
 
         # Return the mask with the highest score
         best_idx = np.argmax(scores)
-        return masks[best_idx], float(scores[best_idx])
+        mask = masks[best_idx]
+
+        # Apply morphological refinement for cleaner boundaries
+        mask = self._refine_mask(mask)
+
+        return mask, float(scores[best_idx])
+
+    def _refine_mask(self, mask: NDArray[np.bool_]) -> NDArray[np.bool_]:
+        """Refine mask with morphological operations for cleaner boundaries.
+
+        Args:
+            mask: Binary mask
+
+        Returns:
+            Refined binary mask
+        """
+        mask_uint8 = mask.astype(np.uint8) * 255
+
+        # Small kernel for fine details
+        kernel_small = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+
+        # Close small holes
+        mask_uint8 = cv2.morphologyEx(mask_uint8, cv2.MORPH_CLOSE, kernel_small)
+
+        # Remove small noise
+        mask_uint8 = cv2.morphologyEx(mask_uint8, cv2.MORPH_OPEN, kernel_small)
+
+        return mask_uint8 > 127
 
 
 class MockSAMModel:
