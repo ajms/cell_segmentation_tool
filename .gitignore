@@ -45,3 +45,6 @@ Thumbs.db
 checkpoints/
 *.pt
 *.pth
+
+# custom
+data/
