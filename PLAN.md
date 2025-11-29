@@ -34,6 +34,7 @@ Build a web-based UI for labeling cells in microscopy images using SAM2.1 (Segme
 - [ ] Next/Previous image navigation (partially implemented)
 - [x] **Prevent label overlaps** - Exclude existing annotations from new segmentations
 - [x] **Merge annotations** - Select multiple annotations and merge into one using polygon union
+- [x] **Segment/Select modes** - Separate modes for SAM segmentation vs annotation selection
 
 ### Phase 4: Polish & Export - NOT STARTED
 
@@ -67,6 +68,25 @@ Implemented feature to merge multiple selected annotations into a single annotat
 - **Tests** (`backend/tests/test_annotations_api.py`): Added 5 tests for merge functionality (TDD approach).
 - **Frontend**: Multi-selection state (`selectedAnnotations` array), Shift+click handling, M keyboard shortcut, merge button UI.
 - **Dependency**: Added `shapely>=2.0.0` to `pyproject.toml`.
+
+---
+
+## Completed: Segment/Select Modes (DONE)
+
+### Summary
+Separated click behavior into two distinct modes to avoid confusion between adding SAM segmentation points and selecting existing annotations.
+
+### Usage
+- **Segment mode** (default): Click adds positive SAM points, right-click adds negative points
+- **Select mode**: Click to select annotations, Shift+click for multi-select
+- Press `S` to toggle between modes (or click mode button in status bar)
+- Mode indicator in status bar shows current mode with distinct colors
+
+### Implementation
+- **Frontend** (`frontend/src/App.jsx`): Added `mode` state and `handleToggleMode` callback
+- **Frontend** (`frontend/src/components/ImageCanvas.jsx`): Click handler uses mode to determine behavior
+- **Frontend** (`frontend/src/components/StatusBar.jsx`): Mode toggle button with visual indicator
+- **Frontend** (`frontend/src/hooks/useKeyboard.js`): Added `S` key shortcut for mode toggle
 
 ---
 
@@ -289,8 +309,10 @@ Features:
 | `N` or `→` | Next image |
 | `P` or `←` | Previous image |
 | `1-9` | Switch to class 1-9 |
+| `S` | Toggle segment/select mode |
+| `M` | Merge selected annotations (select mode) |
 | `V` | Toggle annotation visibility |
-| `Delete` | Remove selected annotation |
+| `Delete` | Remove selected annotation(s) |
 | `H` or `?` | Show keyboard shortcuts help |
 | `+` / `-` | Zoom in/out |
 | `Space` | Pan mode (drag to move) |
