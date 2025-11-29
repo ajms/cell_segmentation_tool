@@ -17,8 +17,12 @@ export const fetchImageInfo = (imageId) =>
 export const encodeImage = (imageId) =>
   api.post(`/sam/encode/${imageId}`).then((res) => res.data);
 
-export const segmentImage = (imageId, points) =>
-  api.post('/sam/segment', { image_id: imageId, points }).then((res) => res.data);
+export const segmentImage = (imageId, points, existingPolygons = null) =>
+  api.post('/sam/segment', {
+    image_id: imageId,
+    points,
+    existing_polygons: existingPolygons,
+  }).then((res) => res.data);
 
 // Annotation endpoints
 export const fetchAnnotations = (imageId) =>

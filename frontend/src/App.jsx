@@ -75,12 +75,15 @@ function App() {
       return;
     }
 
+    // Extract existing polygons from annotations to prevent overlaps
+    const existingPolygons = annotations?.map((a) => a.segmentation) || null;
+
     const debounceTimer = setTimeout(() => {
-      sam.segment(selectedImageId, points).catch(console.error);
+      sam.segment(selectedImageId, points, existingPolygons).catch(console.error);
     }, 100);
 
     return () => clearTimeout(debounceTimer);
-  }, [selectedImageId, points]);
+  }, [selectedImageId, points, annotations]);
 
   // Handlers
   const handleAddPoint = useCallback((point) => {

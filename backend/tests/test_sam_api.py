@@ -112,3 +112,68 @@ class TestSAMAPI:
             json={"image_id": image_id, "points": []},
         )
         assert response.status_code == 400
+
+    async def test_segment_excludes_existing_polygons(self, client: AsyncClient):
+        """Existing annotations should be excluded from new segmentation masks."""
+        list_response = await client.get("/api/images")
+        images = list_response.json()
+        if len(images) == 0:
+            pytest.skip("No images available")
+
+        image_id = images[0]["id"]
+        await client.post(f"/api/sam/encode/{image_id}")
+
+        # First, segment without existing polygons
+        response_without = await client.post(
+            "/api/sam/segment",
+            json={
+                "image_id": image_id,
+                "points": [{"x": 100, "y": 100, "is_positive": True}],
+            },
+        )
+        assert response_without.status_code == 200
+        data_without = response_without.json()
+        area_without = data_without["area"]
+
+        # Now segment with an existing polygon that overlaps with the click point
+        # The existing polygon covers a region around (100, 100)
+        existing_polygon = [
+            [80.0, 80.0, 120.0, 80.0, 120.0, 120.0, 80.0, 120.0]  # 40x40 square
+        ]
+        response_with = await client.post(
+            "/api/sam/segment",
+            json={
+                "image_id": image_id,
+                "points": [{"x": 100, "y": 100, "is_positive": True}],
+                "existing_polygons": [existing_polygon],
+            },
+        )
+        assert response_with.status_code == 200
+        data_with = response_with.json()
+        area_with = data_with["area"]
+
+        # Area should be smaller due to exclusion
+        assert area_with < area_without
+
+    async def test_segment_with_empty_existing_polygons(self, client: AsyncClient):
+        """Empty existing_polygons should work the same as not providing it."""
+        list_response = await client.get("/api/images")
+        images = list_response.json()
+        if len(images) == 0:
+            pytest.skip("No images available")
+
+        image_id = images[0]["id"]
+        await client.post(f"/api/sam/encode/{image_id}")
+
+        response = await client.post(
+            "/api/sam/segment",
+            json={
+                "image_id": image_id,
+                "points": [{"x": 100, "y": 100, "is_positive": True}],
+                "existing_polygons": [],
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "polygon" in data
+        assert data["area"] > 0

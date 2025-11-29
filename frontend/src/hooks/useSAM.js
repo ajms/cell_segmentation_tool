@@ -27,7 +27,7 @@ export function useSAM() {
     }
   }, []);
 
-  const segment = useCallback(async (imageId, points) => {
+  const segment = useCallback(async (imageId, points, existingPolygons = null) => {
     if (points.length === 0) {
       setPreview(null);
       return null;
@@ -42,7 +42,7 @@ export function useSAM() {
         await encode(imageId);
       }
 
-      const result = await segmentImage(imageId, points);
+      const result = await segmentImage(imageId, points, existingPolygons);
       setPreview(result);
       return result;
     } catch (err) {

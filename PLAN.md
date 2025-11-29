@@ -32,8 +32,21 @@ Build a web-based UI for labeling cells in microscopy images using SAM2.1 (Segme
 - [x] Multi-point prompting with preview mask
 - [x] Keyboard shortcuts for all actions
 - [ ] Next/Previous image navigation (partially implemented)
+- [x] **Prevent label overlaps** - Exclude existing annotations from new segmentations
 
 ### Phase 4: Polish & Export - NOT STARTED
+
+---
+
+## Completed: Prevent Label Overlaps (DONE)
+
+### Summary
+Implemented feature to ensure new segmentation masks don't overlap with existing labels. When creating a new annotation, any pixels already belonging to existing annotations are automatically excluded.
+
+### Implementation
+- **Backend** (`backend/app/api/sam.py`): Added `existing_polygons` field to `SegmentRequest` and `polygons_to_mask()` helper function. After SAM prediction, the exclusion mask is subtracted from the result.
+- **Tests** (`backend/tests/test_sam_api.py`): Added tests verifying overlap exclusion works correctly.
+- **Frontend** (`frontend/src/utils/api.js`, `frontend/src/hooks/useSAM.js`, `frontend/src/App.jsx`): Updated to pass existing annotation polygons when calling segment.
 
 ---
 

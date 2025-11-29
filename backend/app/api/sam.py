@@ -26,6 +26,7 @@ class Point(BaseModel):
 class SegmentRequest(BaseModel):
     image_id: str
     points: list[Point]
+    existing_polygons: list[list[list[float]]] | None = None  # Polygons to exclude
 
 
 class SegmentResponse(BaseModel):
@@ -86,6 +87,23 @@ async def segment(request: SegmentRequest) -> SegmentResponse:
     sam_model = get_sam_model()
     mask, score = sam_model.predict(point_coords, point_labels)
 
+    # Exclude existing polygons from the mask
+    if request.existing_polygons:
+        print(f"DEBUG: mask.shape={mask.shape}, points={[(p.x, p.y) for p in request.points]}")
+        print(f"DEBUG: Received {len(request.existing_polygons)} existing annotations")
+        # Check first polygon coords
+        if request.existing_polygons and request.existing_polygons[0]:
+            first_poly = request.existing_polygons[0][0][:8] if request.existing_polygons[0] else []
+            print(f"DEBUG: First polygon coords (first 8): {first_poly}")
+        exclusion_mask = polygons_to_mask(request.existing_polygons, mask.shape)
+        excluded_pixels = int(np.sum(exclusion_mask))
+        print(f"DEBUG: Exclusion mask has {excluded_pixels} pixels, SAM mask has {int(np.sum(mask))} pixels")
+        # Check overlap
+        overlap = int(np.sum(mask & exclusion_mask))
+        print(f"DEBUG: Overlap between SAM and exclusion: {overlap} pixels")
+        mask = mask & ~exclusion_mask
+        print(f"DEBUG: After exclusion, mask has {int(np.sum(mask))} pixels")
+
     # Convert mask to polygon
     polygons = mask_to_polygons(mask)
 
@@ -145,3 +163,29 @@ def calculate_bbox(mask: np.ndarray) -> list[float]:
     x_min, x_max = np.where(cols)[0][[0, -1]]
 
     return [float(x_min), float(y_min), float(x_max - x_min + 1), float(y_max - y_min + 1)]
+
+
+def polygons_to_mask(
+    polygons: list[list[list[float]]], shape: tuple[int, int]
+) -> np.ndarray:
+    """Convert list of annotation polygons to binary exclusion mask.
+
+    Args:
+        polygons: List of annotations, each containing list of polygon coords [x1,y1,x2,y2,...]
+        shape: (height, width) of the output mask
+
+    Returns:
+        Binary mask where True indicates existing annotations
+    """
+    mask = np.zeros(shape, dtype=np.uint8)
+
+    for annotation_polygons in polygons:
+        for polygon_coords in annotation_polygons:
+            # Convert [x1,y1,x2,y2,...] to array of points [[x1,y1], [x2,y2], ...]
+            coords = np.array(polygon_coords, dtype=np.float32)
+            if len(coords) < 6:  # Need at least 3 points (6 values)
+                continue
+            points = coords.reshape(-1, 2).astype(np.int32)
+            cv2.fillPoly(mask, [points], 1)
+
+    return mask > 0
