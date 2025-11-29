@@ -44,4 +44,12 @@ export const mergeAnnotations = (annotationIds, classId, className) =>
     class_name: className,
   }).then((res) => res.data);
 
+export const applyBrushToAnnotation = (annotationId, brushPath, brushRadius, operation) =>
+  api.patch(`/annotations/${annotationId}/brush`, {
+    // Convert {x, y} objects to [x, y] arrays for Pydantic tuple validation
+    brush_path: brushPath.map((p) => [p.x, p.y]),
+    brush_radius: brushRadius,
+    operation,
+  }).then((res) => res.data);
+
 export default api;

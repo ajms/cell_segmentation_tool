@@ -24,6 +24,9 @@ function App() {
   const [mode, setMode] = useState('segment'); // 'segment' or 'select'
   const [points, setPoints] = useState([]);
   const [showAnnotations, setShowAnnotations] = useState(true);
+  const [tool, setTool] = useState('pointer'); // 'pointer' or 'brush'
+  const [brushMode, setBrushMode] = useState('add'); // 'add' or 'remove'
+  const [brushSize, setBrushSize] = useState(20); // radius in image pixels
   const [showHelp, setShowHelp] = useState(false);
   const [annotationCounts, setAnnotationCounts] = useState({});
   const [brightness, setBrightness] = useState(0);
@@ -37,6 +40,7 @@ function App() {
     saveAnnotation,
     deleteAnnotation,
     mergeAnnotations,
+    applyBrush,
     undo,
     redo,
     canUndo,
@@ -167,12 +171,40 @@ function App() {
     }
   }, [selectedAnnotations, selectedClass, mergeAnnotations]);
 
+  const handleBrushComplete = useCallback(async (brushPath, brushRadius, operation) => {
+    if (selectedAnnotations.length !== 1 || brushPath.length === 0) return;
+
+    try {
+      await applyBrush(selectedAnnotations[0], brushPath, brushRadius, operation);
+    } catch (err) {
+      console.error('Failed to apply brush:', err);
+    }
+  }, [selectedAnnotations, applyBrush]);
+
+  const handleToggleBrush = useCallback(() => {
+    if (mode !== 'select' || selectedAnnotations.length !== 1) return;
+    setTool((prev) => (prev === 'brush' ? 'pointer' : 'brush'));
+  }, [mode, selectedAnnotations]);
+
+  const handleToggleBrushMode = useCallback(() => {
+    setBrushMode((prev) => (prev === 'add' ? 'remove' : 'add'));
+  }, []);
+
+  const handleIncreaseBrushSize = useCallback(() => {
+    setBrushSize((prev) => Math.min(prev + 5, 100));
+  }, []);
+
+  const handleDecreaseBrushSize = useCallback(() => {
+    setBrushSize((prev) => Math.max(prev - 5, 5));
+  }, []);
+
   const handleToggleMode = useCallback(() => {
     setMode((prev) => {
       const newMode = prev === 'segment' ? 'select' : 'segment';
       // Clear state when switching modes
       if (newMode === 'segment') {
         setSelectedAnnotations([]);
+        setTool('pointer'); // Reset brush tool
       } else {
         setPoints([]);
         sam.clearPreview();
@@ -201,6 +233,10 @@ function App() {
     onRemoveLastPoint: handleRemoveLastPoint,
     onMerge: handleMerge,
     onToggleMode: handleToggleMode,
+    onToggleBrush: handleToggleBrush,
+    onToggleBrushMode: handleToggleBrushMode,
+    onIncreaseBrushSize: handleIncreaseBrushSize,
+    onDecreaseBrushSize: handleDecreaseBrushSize,
     enabled: !showHelp,
   });
 
@@ -260,6 +296,10 @@ function App() {
             brightness={brightness}
             contrast={contrast}
             mode={mode}
+            tool={tool}
+            brushMode={brushMode}
+            brushSize={brushSize}
+            onBrushComplete={handleBrushComplete}
           />
           <StatusBar
             isEncoding={sam.isEncoding}
@@ -274,6 +314,11 @@ function App() {
             mode={mode}
             onToggleMode={handleToggleMode}
             selectedCount={selectedAnnotations.length}
+            tool={tool}
+            brushMode={brushMode}
+            brushSize={brushSize}
+            onToggleBrush={handleToggleBrush}
+            onToggleBrushMode={handleToggleBrushMode}
           />
         </section>
 

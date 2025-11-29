@@ -6,6 +6,8 @@ import {
   screenToImage,
   getClassColor,
   getClassColorWithAlpha,
+  drawBrushStroke,
+  drawBrushCursor,
 } from '../utils/canvas';
 
 export function ImageCanvas({
@@ -22,6 +24,10 @@ export function ImageCanvas({
   brightness = 0,
   contrast = 1,
   mode = 'segment',
+  tool = 'pointer',
+  brushMode = 'add',
+  brushSize = 20,
+  onBrushComplete,
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -30,6 +36,11 @@ export function ImageCanvas({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  // Brush state
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [brushPath, setBrushPath] = useState([]);
+  const [mousePos, setMousePos] = useState(null);
 
   // Load image when ID changes
   useEffect(() => {
@@ -141,6 +152,25 @@ export function ImageCanvas({
     });
 
     overlayCtx.restore();
+
+    // Draw brush stroke preview and cursor
+    if (mode === 'select' && tool === 'brush' && selectedAnnotations.length === 1) {
+      overlayCtx.save();
+      overlayCtx.translate(offset.x, offset.y);
+      overlayCtx.scale(scale, scale);
+
+      // Draw current brush stroke
+      if (brushPath.length > 0) {
+        drawBrushStroke(overlayCtx, brushPath, brushSize, brushMode === 'add');
+      }
+
+      // Draw brush cursor at mouse position
+      if (mousePos) {
+        drawBrushCursor(overlayCtx, mousePos.x, mousePos.y, brushSize, brushMode === 'add');
+      }
+
+      overlayCtx.restore();
+    }
   }, [
     imageLoaded,
     scale,
@@ -151,6 +181,12 @@ export function ImageCanvas({
     selectedAnnotations,
     showAnnotations,
     currentClassId,
+    mode,
+    tool,
+    brushPath,
+    brushSize,
+    brushMode,
+    mousePos,
   ]);
 
   // Redraw on changes
@@ -181,9 +217,9 @@ export function ImageCanvas({
     return () => window.removeEventListener('resize', handleResize);
   }, [draw]);
 
-  // Handle clicks based on mode
-  const handleCanvasClick = (e) => {
-    if (!imageInfo || !canvasRef.current) return;
+  // Helper to get image coordinates from mouse event
+  const getImageCoords = useCallback((e) => {
+    if (!imageInfo || !canvasRef.current) return null;
 
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -198,22 +234,37 @@ export function ImageCanvas({
       offset.y
     );
 
-    // Check if click is within image bounds
+    // Check if within image bounds
     if (x < 0 || x >= imageInfo.width || y < 0 || y >= imageInfo.height) {
-      return;
+      return null;
     }
 
-    if (mode === 'segment') {
+    return { x, y };
+  }, [imageInfo, scale, offset]);
+
+  // Brush mode: check if brush is active
+  const isBrushActive = mode === 'select' && tool === 'brush' && selectedAnnotations.length === 1;
+
+  // Handle mouse down
+  const handleMouseDown = (e) => {
+    const coords = getImageCoords(e);
+    if (!coords) return;
+
+    if (isBrushActive) {
+      // Start brush stroke
+      setIsDrawing(true);
+      setBrushPath([coords]);
+    } else if (mode === 'segment') {
       // Segment mode: add points for SAM
       const isPositive = e.button !== 2;
-      onAddPoint?.({ x, y, is_positive: isPositive });
-    } else {
-      // Select mode: select annotations
+      onAddPoint?.({ x: coords.x, y: coords.y, is_positive: isPositive });
+    } else if (mode === 'select' && tool === 'pointer') {
+      // Select mode with pointer tool: select annotations
       if (!showAnnotations) return;
 
       for (const ann of annotations) {
         for (const polygon of ann.segmentation) {
-          if (isPointInPolygon(x, y, polygon)) {
+          if (isPointInPolygon(coords.x, coords.y, polygon)) {
             onSelectAnnotation?.(ann.id, e.shiftKey);
             return;
           }
@@ -224,11 +275,52 @@ export function ImageCanvas({
     }
   };
 
+  // Handle mouse move
+  const handleMouseMove = (e) => {
+    const coords = getImageCoords(e);
+
+    if (isBrushActive) {
+      // Update mouse position for cursor
+      setMousePos(coords);
+
+      // If drawing, add to brush path
+      if (isDrawing && coords) {
+        setBrushPath((prev) => [...prev, coords]);
+      }
+    }
+  };
+
+  // Handle mouse up
+  const handleMouseUp = () => {
+    if (isDrawing && brushPath.length > 0) {
+      // Complete brush stroke
+      onBrushComplete?.(brushPath, brushSize, brushMode);
+      setBrushPath([]);
+    }
+    setIsDrawing(false);
+  };
+
+  // Handle mouse leave
+  const handleMouseLeave = () => {
+    setMousePos(null);
+    if (isDrawing) {
+      // Complete brush stroke when leaving canvas
+      if (brushPath.length > 0) {
+        onBrushComplete?.(brushPath, brushSize, brushMode);
+      }
+      setBrushPath([]);
+      setIsDrawing(false);
+    }
+  };
+
   // Prevent context menu, use for negative points in segment mode
   const handleContextMenu = (e) => {
     e.preventDefault();
     if (mode === 'segment') {
-      handleCanvasClick(e);
+      const coords = getImageCoords(e);
+      if (coords) {
+        onAddPoint?.({ x: coords.x, y: coords.y, is_positive: false });
+      }
     }
   };
 
@@ -252,6 +344,13 @@ export function ImageCanvas({
   // Compute CSS filter for brightness/contrast adjustments
   const imageFilter = `brightness(${1 + brightness / 100}) contrast(${contrast})`;
 
+  // Determine canvas class based on mode and tool
+  const canvasClass = [
+    'canvas-overlay',
+    mode === 'select' ? 'select-mode' : 'segment-mode',
+    isBrushActive ? 'brush-mode' : '',
+  ].filter(Boolean).join(' ');
+
   return (
     <div className="canvas-container" ref={containerRef}>
       <canvas
@@ -261,8 +360,11 @@ export function ImageCanvas({
       />
       <canvas
         ref={overlayRef}
-        className={`canvas-overlay ${mode === 'select' ? 'select-mode' : 'segment-mode'}`}
-        onMouseDown={handleCanvasClick}
+        className={canvasClass}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         onContextMenu={handleContextMenu}
       />
       {!imageLoaded && (

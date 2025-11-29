@@ -35,6 +35,7 @@ Build a web-based UI for labeling cells in microscopy images using SAM2.1 (Segme
 - [x] **Prevent label overlaps** - Exclude existing annotations from new segmentations
 - [x] **Merge annotations** - Select multiple annotations and merge into one using polygon union
 - [x] **Segment/Select modes** - Separate modes for SAM segmentation vs annotation selection
+- [x] **Brush tool** - Paint to fill holes (add) or trim edges (remove) on annotations
 
 ### Phase 4: Polish & Export - NOT STARTED
 
@@ -87,6 +88,39 @@ Separated click behavior into two distinct modes to avoid confusion between addi
 - **Frontend** (`frontend/src/components/ImageCanvas.jsx`): Click handler uses mode to determine behavior
 - **Frontend** (`frontend/src/components/StatusBar.jsx`): Mode toggle button with visual indicator
 - **Frontend** (`frontend/src/hooks/useKeyboard.js`): Added `S` key shortcut for mode toggle
+
+---
+
+## Completed: Brush Tool (DONE)
+
+### Summary
+Added a brush tool to modify existing annotations by painting to fill holes (add mode) or trim edges (remove mode). Uses Shapely for polygon union/difference operations on the backend.
+
+### Usage
+1. Switch to **Select mode** (`S` key) and select a single annotation
+2. Press `B` to activate the brush tool
+3. Press `X` to toggle between add (green) and remove (red) modes
+4. Use `[` and `]` to decrease/increase brush size
+5. Paint on the canvas - changes are applied on mouse release
+6. Supports undo/redo (`Ctrl+Z` / `Ctrl+Y`)
+
+### Keyboard Shortcuts
+| Key | Action |
+|-----|--------|
+| `B` | Toggle brush tool (select mode, 1 annotation selected) |
+| `X` | Toggle add/remove mode |
+| `[` | Decrease brush size |
+| `]` | Increase brush size |
+
+### Implementation
+- **Backend** (`backend/app/api/annotations.py`): Added `PATCH /api/annotations/{id}/brush` endpoint
+- **Backend** (`backend/app/utils/annotation_store.py`): Added `apply_brush_to_annotation()` method using Shapely `unary_union` (add) and `difference` (remove) operations
+- **Frontend** (`frontend/src/utils/api.js`): Added `applyBrushToAnnotation()` API function
+- **Frontend** (`frontend/src/hooks/useAnnotations.js`): Added `applyBrush()` method with undo/redo support
+- **Frontend** (`frontend/src/components/ImageCanvas.jsx`): Brush drawing, mouse events, cursor rendering
+- **Frontend** (`frontend/src/utils/canvas.js`): Added `drawBrushStroke()` and `drawBrushCursor()` utilities
+- **Frontend** (`frontend/src/components/StatusBar.jsx`): Brush tool toggle, mode indicator, size display
+- **Tests** (`backend/tests/test_annotations_api.py`): 7 new tests for brush add/remove operations
 
 ---
 
@@ -311,6 +345,9 @@ Features:
 | `1-9` | Switch to class 1-9 |
 | `S` | Toggle segment/select mode |
 | `M` | Merge selected annotations (select mode) |
+| `B` | Toggle brush tool (select mode, 1 selected) |
+| `X` | Toggle brush add/remove mode |
+| `[` / `]` | Decrease/increase brush size |
 | `V` | Toggle annotation visibility |
 | `Delete` | Remove selected annotation(s) |
 | `H` or `?` | Show keyboard shortcuts help |

@@ -5,6 +5,7 @@ import {
   deleteAnnotation as deleteAnnotationApi,
   updateAnnotation as updateAnnotationApi,
   mergeAnnotations as mergeAnnotationsApi,
+  applyBrushToAnnotation as applyBrushApi,
 } from '../utils/api';
 
 export function useAnnotations(imageId) {
@@ -145,6 +146,31 @@ export function useAnnotations(imageId) {
     }
   }, [imageId, annotations]);
 
+  const applyBrush = useCallback(async (annotationId, brushPath, brushRadius, operation) => {
+    const oldAnnotation = annotations.find((a) => a.id === annotationId);
+    if (!oldAnnotation) return null;
+
+    try {
+      const updated = await applyBrushApi(annotationId, brushPath, brushRadius, operation);
+
+      setAnnotations((prev) =>
+        prev.map((a) => (a.id === annotationId ? updated : a))
+      );
+
+      // Add to undo stack with old annotation state for restoration
+      setUndoStack((prev) => [
+        ...prev,
+        { type: 'brush', oldAnnotation, newAnnotation: updated },
+      ]);
+      setRedoStack([]);
+
+      return updated;
+    } catch (err) {
+      setError(err.message || 'Failed to apply brush');
+      throw err;
+    }
+  }, [annotations]);
+
   const undo = useCallback(async () => {
     if (undoStack.length === 0) return;
 
@@ -198,6 +224,22 @@ export function useAnnotations(imageId) {
           ...recreated,
         ]);
         action.mergedAnnotations = recreated;
+      } else if (action.type === 'brush') {
+        // Undo brush = delete modified, recreate with old geometry
+        await deleteAnnotationApi(action.newAnnotation.id);
+        const restored = await createAnnotation(imageId, {
+          class_id: action.oldAnnotation.class_id,
+          class_name: action.oldAnnotation.class_name,
+          segmentation: action.oldAnnotation.segmentation,
+          bbox: action.oldAnnotation.bbox,
+          area: action.oldAnnotation.area,
+        });
+        setAnnotations((prev) => [
+          ...prev.filter((a) => a.id !== action.newAnnotation.id),
+          restored,
+        ]);
+        // Update references for redo
+        action.oldAnnotation = restored;
       }
 
       setRedoStack((prev) => [...prev, action]);
@@ -252,6 +294,22 @@ export function useAnnotations(imageId) {
           merged,
         ]);
         action.newAnnotation = merged;
+      } else if (action.type === 'brush') {
+        // Redo brush = delete restored, recreate with new geometry
+        await deleteAnnotationApi(action.oldAnnotation.id);
+        const reapplied = await createAnnotation(imageId, {
+          class_id: action.newAnnotation.class_id,
+          class_name: action.newAnnotation.class_name,
+          segmentation: action.newAnnotation.segmentation,
+          bbox: action.newAnnotation.bbox,
+          area: action.newAnnotation.area,
+        });
+        setAnnotations((prev) => [
+          ...prev.filter((a) => a.id !== action.oldAnnotation.id),
+          reapplied,
+        ]);
+        // Update references for next undo
+        action.newAnnotation = reapplied;
       }
 
       setUndoStack((prev) => [...prev, action]);
@@ -268,6 +326,7 @@ export function useAnnotations(imageId) {
     deleteAnnotation,
     updateAnnotation,
     mergeAnnotations,
+    applyBrush,
     undo,
     redo,
     canUndo: undoStack.length > 0,

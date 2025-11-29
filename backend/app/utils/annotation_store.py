@@ -2,9 +2,9 @@ import json
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TypedDict
+from typing import Literal, TypedDict
 
-from shapely.geometry import Polygon
+from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
 
@@ -207,6 +207,115 @@ class AnnotationStore:
         )
 
         return merged
+
+    def apply_brush_to_annotation(
+        self,
+        annotation_id: str,
+        brush_path: list[tuple[float, float]],
+        brush_radius: float,
+        operation: Literal["add", "remove"],
+    ) -> AnnotationData | None:
+        """Apply a brush stroke to an annotation, expanding or shrinking its area.
+
+        Args:
+            annotation_id: ID of the annotation to modify
+            brush_path: List of (x, y) coordinates forming the brush stroke
+            brush_radius: Radius of the brush in image pixels
+            operation: "add" for union, "remove" for difference
+
+        Returns:
+            The modified annotation, or None if annotation not found or operation failed
+        """
+        # Find the annotation and its image
+        annotation = None
+        image_id = None
+        for file_path in self.storage_dir.glob("*.json"):
+            img_id = file_path.stem
+            annotations = self._load_annotations(img_id)
+            for ann in annotations:
+                if ann["id"] == annotation_id:
+                    annotation = ann
+                    image_id = img_id
+                    break
+            if annotation:
+                break
+
+        if annotation is None or image_id is None:
+            return None
+
+        # Convert annotation segmentation to Shapely polygons
+        ann_polygons = []
+        for seg in annotation["segmentation"]:
+            coords = [(seg[i], seg[i + 1]) for i in range(0, len(seg), 2)]
+            if len(coords) >= 3:
+                poly = Polygon(coords)
+                if poly.is_valid:
+                    ann_polygons.append(poly)
+
+        if not ann_polygons:
+            return None
+
+        # Compute union of all annotation polygons
+        ann_geom = unary_union(ann_polygons)
+
+        # Create brush stroke polygon
+        brush_poly = self._brush_path_to_polygon(brush_path, brush_radius)
+        if brush_poly is None or brush_poly.is_empty:
+            return None
+
+        # Apply operation
+        if operation == "add":
+            result_geom = unary_union([ann_geom, brush_poly])
+        else:  # remove
+            result_geom = ann_geom.difference(brush_poly)
+
+        if result_geom.is_empty:
+            return None
+
+        # Convert back to segmentation format
+        new_segmentation = self._geometry_to_segmentation(result_geom)
+        if not new_segmentation:
+            return None
+
+        # Calculate new bbox and area
+        minx, miny, maxx, maxy = result_geom.bounds
+        new_bbox = [float(minx), float(miny), float(maxx - minx), float(maxy - miny)]
+        new_area = float(result_geom.area)
+
+        # Update annotation in storage
+        annotations = self._load_annotations(image_id)
+        for i, ann in enumerate(annotations):
+            if ann["id"] == annotation_id:
+                annotations[i]["segmentation"] = new_segmentation
+                annotations[i]["bbox"] = new_bbox
+                annotations[i]["area"] = new_area
+                self._save_annotations(image_id, annotations)
+                return annotations[i]
+
+        return None
+
+    def _brush_path_to_polygon(
+        self, path: list[tuple[float, float]], radius: float
+    ) -> Polygon | None:
+        """Convert a brush path to a polygon by buffering the line.
+
+        Args:
+            path: List of (x, y) coordinates
+            radius: Buffer radius
+
+        Returns:
+            Buffered polygon, or None if path is empty
+        """
+        if not path:
+            return None
+
+        if len(path) == 1:
+            # Single point - create a circle
+            return Point(path[0]).buffer(radius, resolution=16)
+
+        # Multiple points - create a buffered line
+        line = LineString(path)
+        return line.buffer(radius, cap_style="round", join_style="round", resolution=16)
 
     def _geometry_to_segmentation(self, geom) -> list[list[float]]:
         """Convert a Shapely geometry to segmentation format."""

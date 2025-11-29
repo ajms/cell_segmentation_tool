@@ -123,3 +123,77 @@ export function getClassColorWithAlpha(classId, alpha = 0.3) {
   const b = parseInt(color.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+/**
+ * Draw a brush stroke preview on canvas
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Array<{x: number, y: number}>} path - Array of points
+ * @param {number} radius - Brush radius
+ * @param {boolean} isAddMode - true for add (green), false for remove (red)
+ */
+export function drawBrushStroke(ctx, path, radius, isAddMode) {
+  if (path.length === 0) return;
+
+  const color = isAddMode ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)';
+  const strokeColor = isAddMode ? '#22c55e' : '#ef4444';
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = radius * 2;
+  ctx.strokeStyle = color;
+
+  ctx.beginPath();
+  ctx.moveTo(path[0].x, path[0].y);
+
+  for (let i = 1; i < path.length; i++) {
+    ctx.lineTo(path[i].x, path[i].y);
+  }
+  ctx.stroke();
+
+  // Draw outline
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = strokeColor;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Draw brush cursor circle
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x
+ * @param {number} y
+ * @param {number} radius
+ * @param {boolean} isAddMode
+ */
+export function drawBrushCursor(ctx, x, y, radius, isAddMode) {
+  const color = isAddMode ? '#22c55e' : '#ef4444';
+
+  ctx.save();
+
+  // Draw filled circle with transparency
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = isAddMode ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+  ctx.fill();
+
+  // Draw outline
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw crosshair
+  ctx.beginPath();
+  ctx.moveTo(x - 4, y);
+  ctx.lineTo(x + 4, y);
+  ctx.moveTo(x, y - 4);
+  ctx.lineTo(x, y + 4);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.restore();
+}

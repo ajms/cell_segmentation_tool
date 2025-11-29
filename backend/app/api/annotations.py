@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
@@ -27,6 +29,12 @@ class MergeRequest(BaseModel):
     annotation_ids: list[str]
     class_id: int
     class_name: str
+
+
+class BrushModifyRequest(BaseModel):
+    brush_path: list[tuple[float, float]]
+    brush_radius: float
+    operation: Literal["add", "remove"]
 
 
 class Annotation(BaseModel):
@@ -130,3 +138,45 @@ async def delete_annotation(annotation_id: str) -> None:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Annotation '{annotation_id}' not found",
         )
+
+
+@router.patch("/{annotation_id}/brush", response_model=Annotation)
+async def apply_brush(annotation_id: str, data: BrushModifyRequest) -> Annotation:
+    """Apply a brush stroke to modify an annotation's geometry.
+
+    Use operation="add" to expand the annotation (fill holes, extend edges).
+    Use operation="remove" to shrink the annotation (trim edges, create holes).
+    """
+    if not data.brush_path:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Brush path cannot be empty",
+        )
+
+    if data.brush_radius <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Brush radius must be positive",
+        )
+
+    # Check if annotation exists
+    if annotation_store.get_annotation_by_id(annotation_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Annotation '{annotation_id}' not found",
+        )
+
+    result = annotation_store.apply_brush_to_annotation(
+        annotation_id=annotation_id,
+        brush_path=data.brush_path,
+        brush_radius=data.brush_radius,
+        operation=data.operation,
+    )
+
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to apply brush operation (annotation may be fully erased)",
+        )
+
+    return Annotation(**result)

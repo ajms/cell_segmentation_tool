@@ -14,6 +14,10 @@ export function useKeyboard({
   onRemoveLastPoint,
   onMerge,
   onToggleMode,
+  onToggleBrush,
+  onToggleBrushMode,
+  onIncreaseBrushSize,
+  onDecreaseBrushSize,
   enabled = true,
 }) {
   const handleKeyDown = useCallback(
@@ -117,6 +121,34 @@ export function useKeyboard({
         return;
       }
 
+      // Toggle brush tool: B
+      if (key === 'b' && !isCtrl) {
+        e.preventDefault();
+        onToggleBrush?.();
+        return;
+      }
+
+      // Toggle brush add/remove mode: X
+      if (key === 'x' && !isCtrl) {
+        e.preventDefault();
+        onToggleBrushMode?.();
+        return;
+      }
+
+      // Decrease brush size: [
+      if (e.key === '[' && !isCtrl) {
+        e.preventDefault();
+        onDecreaseBrushSize?.();
+        return;
+      }
+
+      // Increase brush size: ]
+      if (e.key === ']' && !isCtrl) {
+        e.preventDefault();
+        onIncreaseBrushSize?.();
+        return;
+      }
+
       // Class selection: 1-9
       if (/^[1-9]$/.test(key) && !isCtrl && !isShift) {
         e.preventDefault();
@@ -139,6 +171,10 @@ export function useKeyboard({
       onRemoveLastPoint,
       onMerge,
       onToggleMode,
+      onToggleBrush,
+      onToggleBrushMode,
+      onIncreaseBrushSize,
+      onDecreaseBrushSize,
     ]
   );
 
@@ -165,6 +201,12 @@ export const KEYBOARD_SHORTCUTS = [
   { category: 'Mode', shortcuts: [
     { key: 'S', description: 'Toggle segment/select mode' },
     { key: 'Shift+Click', description: 'Multi-select (in select mode)' },
+  ]},
+  { category: 'Brush Tool', shortcuts: [
+    { key: 'B', description: 'Toggle brush tool (select mode)' },
+    { key: 'X', description: 'Toggle add/remove mode' },
+    { key: '[', description: 'Decrease brush size' },
+    { key: ']', description: 'Increase brush size' },
   ]},
   { category: 'Navigation', shortcuts: [
     { key: 'N / \u2192', description: 'Next image' },
