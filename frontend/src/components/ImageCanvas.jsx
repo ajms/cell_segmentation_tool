@@ -21,6 +21,7 @@ export function ImageCanvas({
   currentClassId = 1,
   brightness = 0,
   contrast = 1,
+  mode = 'segment',
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -180,8 +181,8 @@ export function ImageCanvas({
     return () => window.removeEventListener('resize', handleResize);
   }, [draw]);
 
-  // Handle clicks
-  const handleClick = (e) => {
+  // Handle clicks based on mode
+  const handleCanvasClick = (e) => {
     if (!imageInfo || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
@@ -202,46 +203,33 @@ export function ImageCanvas({
       return;
     }
 
-    // Right click = negative point
-    const isPositive = e.button !== 2;
-    onAddPoint?.({ x, y, is_positive: isPositive });
-  };
+    if (mode === 'segment') {
+      // Segment mode: add points for SAM
+      const isPositive = e.button !== 2;
+      onAddPoint?.({ x, y, is_positive: isPositive });
+    } else {
+      // Select mode: select annotations
+      if (!showAnnotations) return;
 
-  // Handle annotation selection
-  const handleAnnotationClick = (e) => {
-    if (!showAnnotations || !imageInfo || !canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const { x, y } = screenToImage(
-      e.clientX,
-      e.clientY,
-      rect,
-      imageInfo.width,
-      imageInfo.height,
-      scale,
-      offset.x,
-      offset.y
-    );
-
-    // Check if click is on any annotation
-    for (const ann of annotations) {
-      for (const polygon of ann.segmentation) {
-        if (isPointInPolygon(x, y, polygon)) {
-          onSelectAnnotation?.(ann.id, e.shiftKey);
-          return;
+      for (const ann of annotations) {
+        for (const polygon of ann.segmentation) {
+          if (isPointInPolygon(x, y, polygon)) {
+            onSelectAnnotation?.(ann.id, e.shiftKey);
+            return;
+          }
         }
       }
+      // Click not on annotation - deselect
+      onSelectAnnotation?.(null, e.shiftKey);
     }
-
-    // Click not on annotation - deselect
-    onSelectAnnotation?.(null, e.shiftKey);
   };
 
-  // Prevent context menu
+  // Prevent context menu, use for negative points in segment mode
   const handleContextMenu = (e) => {
     e.preventDefault();
-    handleClick(e);
+    if (mode === 'segment') {
+      handleCanvasClick(e);
+    }
   };
 
   if (!imageId) {
@@ -273,9 +261,8 @@ export function ImageCanvas({
       />
       <canvas
         ref={overlayRef}
-        className="canvas-overlay"
-        onClick={handleAnnotationClick}
-        onMouseDown={handleClick}
+        className={`canvas-overlay ${mode === 'select' ? 'select-mode' : 'segment-mode'}`}
+        onMouseDown={handleCanvasClick}
         onContextMenu={handleContextMenu}
       />
       {!imageLoaded && (

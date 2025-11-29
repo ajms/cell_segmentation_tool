@@ -21,6 +21,7 @@ function App() {
   const [imageInfo, setImageInfo] = useState(null);
   const [selectedClass, setSelectedClass] = useState(1);
   const [selectedAnnotations, setSelectedAnnotations] = useState([]);
+  const [mode, setMode] = useState('segment'); // 'segment' or 'select'
   const [points, setPoints] = useState([]);
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
@@ -166,6 +167,20 @@ function App() {
     }
   }, [selectedAnnotations, selectedClass, mergeAnnotations]);
 
+  const handleToggleMode = useCallback(() => {
+    setMode((prev) => {
+      const newMode = prev === 'segment' ? 'select' : 'segment';
+      // Clear state when switching modes
+      if (newMode === 'segment') {
+        setSelectedAnnotations([]);
+      } else {
+        setPoints([]);
+        sam.clearPreview();
+      }
+      return newMode;
+    });
+  }, [sam]);
+
   const handleSelectImage = useCallback((imageId) => {
     setSelectedImageId(imageId);
     sam.resetEncoder();
@@ -185,6 +200,7 @@ function App() {
     onDeleteSelected: handleDeleteSelected,
     onRemoveLastPoint: handleRemoveLastPoint,
     onMerge: handleMerge,
+    onToggleMode: handleToggleMode,
     enabled: !showHelp,
   });
 
@@ -243,6 +259,7 @@ function App() {
             currentClassId={selectedClass}
             brightness={brightness}
             contrast={contrast}
+            mode={mode}
           />
           <StatusBar
             isEncoding={sam.isEncoding}
@@ -254,6 +271,9 @@ function App() {
             onRedo={redo}
             onClear={handleClearPoints}
             onSave={handleSave}
+            mode={mode}
+            onToggleMode={handleToggleMode}
+            selectedCount={selectedAnnotations.length}
           />
         </section>
 

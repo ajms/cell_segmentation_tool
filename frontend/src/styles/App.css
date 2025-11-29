@@ -236,6 +236,14 @@ body::before {
   cursor: crosshair;
 }
 
+.canvas-overlay.segment-mode {
+  cursor: crosshair;
+}
+
+.canvas-overlay.select-mode {
+  cursor: pointer;
+}
+
 .canvas-empty {
   display: flex;
   align-items: center;
@@ -308,7 +316,42 @@ body::before {
 .status-left {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-sm);
+}
+
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.mode-toggle:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.mode-toggle.segment {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.mode-toggle.select {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.mode-toggle svg {
+  width: 14px;
+  height: 14px;
 }
 
 .status-indicator {
