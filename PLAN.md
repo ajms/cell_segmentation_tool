@@ -13,12 +13,25 @@ Build a web-based UI for labeling cells in microscopy images using SAM2.1 (Segme
 - [x] Annotation Management (`GET/POST/PUT/DELETE /api/annotations`)
 - [x] 27 passing tests with TDD approach
 - [x] Mock SAM model for testing on weak machines (USE_MOCK_SAM=true)
+- [x] CPU fallback when CUDA not available
+- [x] CLAHE contrast enhancement for low-contrast microscopy images
+- [x] Morphological mask refinement for cleaner boundaries
+- [x] Upgraded to sam2.1-hiera-small model for better accuracy
 
-### Phase 2: Frontend Setup - NOT STARTED
-- [ ] React + Vite scaffold
-- [ ] Core components
+### Phase 2: Frontend Setup - COMPLETED
+- [x] React + Vite scaffold with Axios
+- [x] API client utility (`src/utils/api.js`)
+- [x] Canvas utilities (`src/utils/canvas.js`)
+- [x] Custom hooks: `useSAM`, `useAnnotations`, `useKeyboard`
+- [x] Components: `ImageCanvas`, `ImageList`, `ClassSelector`, `AnnotationList`, `KeyboardHelp`, `StatusBar`
+- [x] Dark scientific/laboratory aesthetic with grid background
+- [x] Vite proxy configured for `/api` to backend
 
-### Phase 3: Interactive Labeling - NOT STARTED
+### Phase 3: Interactive Labeling - IN PROGRESS
+- [x] Click-to-segment workflow (left click = positive, right click = negative)
+- [x] Multi-point prompting with preview mask
+- [x] Keyboard shortcuts for all actions
+- [ ] Next/Previous image navigation (partially implemented)
 
 ### Phase 4: Polish & Export - NOT STARTED
 
@@ -261,6 +274,15 @@ Features:
 - Color-code masks by class in visualization
 - Export class mappings in COCO format
 
+**Cell Classes:**
+| Key | Class Name | Color |
+|-----|------------|-------|
+| 1 | Transfusion tracheid | Red |
+| 2 | Transfusion parenchyma cell | Blue |
+| 3 | Endodermis cell | Green |
+| 4 | Artefact | Yellow |
+| 5 | Other | Grey |
+
 ---
 
 ## Phase 4: Polish & Export
@@ -317,6 +339,11 @@ Export options:
 
 ### 4.3 UI Improvements
 - **Zoom/Pan**: Detailed labeling of small cells
+- **Brightness/Contrast Sliders**: Adjust image display for better visibility (UI-only, does not affect saved data)
+  - Brightness slider (-100 to +100)
+  - Contrast slider (0.5x to 2x)
+  - Reset button to restore defaults
+  - Applied via CSS filters for performance
 - **Progress indicator**: X/Y images labeled
 - **Annotation statistics**:
   - Total annotations per class
