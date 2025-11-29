@@ -8,8 +8,8 @@ from app.config import API_PREFIX, CORS_ORIGINS
 from app.models.sam_model import initialize_sam_model
 
 app = FastAPI(
-    title="Cell Labeling API",
-    description="Backend API for Cell Labeling Web UI using SAM2.1",
+    title="Cell Labelling API",
+    description="Backend API for Cell Labelling Web UI using SAM2.1",
     version="0.1.0",
 )
 

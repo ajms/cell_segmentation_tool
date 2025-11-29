@@ -335,7 +335,7 @@ export function ImageCanvas({
               <path d="M21 15l-5-5L5 21" />
             </svg>
           </div>
-          <p>Select an image to begin labeling</p>
+          <p>Select an image to begin labelling</p>
         </div>
       </div>
     );

@@ -60,7 +60,7 @@ wheels = [
 ]
 
 [[package]]
-name = "cell-labeling-backend"
+name = "cell-labelling-backend"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

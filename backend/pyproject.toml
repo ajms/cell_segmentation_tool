@@ -1,7 +1,7 @@
 [project]
-name = "cell-labeling-backend"
+name = "cell-labelling-backend"
 version = "0.1.0"
-description = "Backend API for Cell Labeling Web UI using SAM2.1"
+description = "Backend API for Cell Labelling Web UI using SAM2.1"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

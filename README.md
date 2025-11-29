@@ -1,12 +1,12 @@
 # Cell Labeler
 
-Web-based UI for labeling cells in microscopy images using SAM2.1 (Segment Anything Model). Designed for creating training data for downstream segmentation models.
+Web-based UI for labelling cells in microscopy images using SAM2.1 (Segment Anything Model). Designed for creating training data for downstream segmentation models.
 
 ## Features
 
 - **Click-to-segment**: Left-click for positive points, right-click for negative points
 - **Multi-point prompting**: Refine segmentation with multiple clicks before saving
-- **Keyboard-driven workflow**: Extensive shortcuts for efficient labeling
+- **Keyboard-driven workflow**: Extensive shortcuts for efficient labelling
 - **Multi-class support**: Define cell types with color-coded masks
 - **Undo/Redo**: Full annotation history
 - **Low-contrast optimization**: CLAHE enhancement for microscopy images
@@ -60,7 +60,7 @@ USE_MOCK_SAM=true uv run uvicorn app.main:app --reload
 ## Architecture
 
 - **Backend**: FastAPI (Python) - REST API for image serving, SAM inference, and annotation management
-- **Frontend**: React + Vite (JavaScript) - Interactive canvas for click-to-segment labeling
+- **Frontend**: React + Vite (JavaScript) - Interactive canvas for click-to-segment labelling
 - **Model**: SAM2.1 (sam2.1-hiera-small) with CLAHE contrast enhancement
 
 ## Development

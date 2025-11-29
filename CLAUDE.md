@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Cell Labeling Web UI for microscopy images using SAM2.1 (Segment Anything Model). A 2-stage approach where labeled data from this tool will train a segmentation model later.
+Cell Labelling Web UI for microscopy images using SAM2.1 (Segment Anything Model). A 2-stage approach where labeled data from this tool will train a segmentation model later.
 
 ## Architecture
 
 - **Backend**: FastAPI (Python) - REST API for image serving, SAM inference, and annotation management
-- **Frontend**: React + Vite (JavaScript) - Interactive canvas for click-to-segment labeling
+- **Frontend**: React + Vite (JavaScript) - Interactive canvas for click-to-segment labelling
 - **Model**: SAM2.1 for real-time segmentation from user clicks
 - **Data**: 3D cell images from `data/raw/rec_8bit_Paganin.zip`, processed as independent 2D slices
 
@@ -65,4 +65,4 @@ Use TDD (Test-Driven Development): write tests first, then implement the code to
 - **Multi-point prompting**: Collect several positive/negative clicks before confirming segmentation (not instant on each click)
 - **Separate encode step**: Cache image embeddings on backend for faster repeated inference
 - **COCO format export**: Standard format for training downstream segmentation models
-- **Keyboard-driven workflow**: Extensive shortcuts for efficient labeling (Enter to save, Esc to clear, 1-9 for class selection)
+- **Keyboard-driven workflow**: Extensive shortcuts for efficient labelling (Enter to save, Esc to clear, 1-9 for class selection)

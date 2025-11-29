@@ -1,7 +1,7 @@
-# Cell Labeling Web UI - Implementation Plan
+# Cell Labelling Web UI - Implementation Plan
 
 ## Overview
-Build a web-based UI for labeling cells in microscopy images using SAM2.1 (Segment Anything Model). This is a 2-stage approach where labeled data from this tool will be used to train a proper segmentation model later.
+Build a web-based UI for labelling cells in microscopy images using SAM2.1 (Segment Anything Model). This is a 2-stage approach where labeled data from this tool will be used to train a proper segmentation model later.
 
 ## Implementation Status
 
@@ -27,7 +27,7 @@ Build a web-based UI for labeling cells in microscopy images using SAM2.1 (Segme
 - [x] Dark scientific/laboratory aesthetic with grid background
 - [x] Vite proxy configured for `/api` to backend
 
-### Phase 3: Interactive Labeling - IN PROGRESS
+### Phase 3: Interactive Labelling - IN PROGRESS
 - [x] Click-to-segment workflow (left click = positive, right click = negative)
 - [x] Multi-point prompting with preview mask
 - [x] Keyboard shortcuts for all actions
@@ -311,7 +311,7 @@ Data structure:
 
 ---
 
-## Phase 3: Interactive Labeling Features
+## Phase 3: Interactive Labelling Features
 
 ### 3.1 Click-to-Segment Workflow
 **Multi-point prompting before confirmation**
@@ -430,7 +430,7 @@ Export options:
 - Generate train/val split
 
 ### 4.3 UI Improvements
-- **Zoom/Pan**: Detailed labeling of small cells
+- **Zoom/Pan**: Detailed labelling of small cells
 - **Brightness/Contrast Sliders**: Adjust image display for better visibility (UI-only, does not affect saved data)
   - Brightness slider (-100 to +100)
   - Contrast slider (0.5x to 2x)
@@ -463,7 +463,7 @@ Export options:
 ### Separate Encode Step
 - Cache image embeddings on backend
 - Faster inference for repeated queries
-- Reduces computation during interactive labeling
+- Reduces computation during interactive labelling
 
 ### FastAPI + React Architecture
 - FastAPI: Modern async Python, auto-generated docs
@@ -477,7 +477,7 @@ Export options:
 
 1. **Grounding DINO Integration**
    - Text-based prompting ("segment all cells")
-   - Combined with SAM for automatic labeling
+   - Combined with SAM for automatic labelling
    - Semi-automatic annotation pipeline
 
 2. **3D Consistency**
@@ -489,7 +489,7 @@ Export options:
    - Suggest which images to label next
    - Uncertainty-based sampling
 
-4. **Collaborative Labeling**
+4. **Collaborative Labelling**
    - Multi-user support
    - Annotation review/approval workflow
 
