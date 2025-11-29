@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+.eggs/
+*.egg-info/
+*.egg
+
+# uv
+.uv/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/
+dist/
+.npm
+
+# Data files (large)
+data/images/
+data/annotations/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# SAM model checkpoints
+checkpoints/
+*.pt
+*.pth
