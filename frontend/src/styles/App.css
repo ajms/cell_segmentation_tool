@@ -1282,3 +1282,219 @@ body::before {
   font-size: 11px;
   color: var(--color-text-secondary);
 }
+
+/* --------------------------------------------------------------------------
+   Transfer Panel
+   -------------------------------------------------------------------------- */
+.transfer-panel {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: color-mix(in srgb, var(--color-accent) 5%, var(--color-bg-secondary));
+}
+
+.transfer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.transfer-header h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+  margin: 0;
+}
+
+.transfer-progress {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  padding: 2px 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.transfer-error {
+  padding: var(--space-sm);
+  margin-bottom: var(--space-md);
+  background: color-mix(in srgb, var(--color-error) 15%, transparent);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--color-error);
+}
+
+.transfer-settings {
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.transfer-current {
+  margin-bottom: var(--space-md);
+}
+
+.transfer-current-label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.transfer-class-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: color-mix(in srgb, var(--class-color) 15%, transparent);
+  border: 1px solid var(--class-color);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+
+.transfer-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.transfer-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.transfer-button:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-focus);
+}
+
+.transfer-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.transfer-button.primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg-primary);
+  flex: 1;
+}
+
+.transfer-button.primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.transfer-button.secondary {
+  flex-shrink: 0;
+}
+
+.transfer-button.secondary svg {
+  width: 16px;
+  height: 16px;
+}
+
+.transfer-button.cancel {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.transfer-button.cancel:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.transfer-button.save {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-bg-primary);
+  flex: 1;
+}
+
+.transfer-button.save:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-success) 80%, white);
+}
+
+.transfer-confirmed {
+  margin-bottom: var(--space-md);
+}
+
+.transfer-confirmed-header {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.transfer-confirmed-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.transfer-confirmed-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.transfer-confirmed-item .class-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.confirmed-class-name {
+  flex: 1;
+  color: var(--color-text-primary);
+}
+
+.confirmed-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: var(--transition-fast);
+}
+
+.confirmed-remove:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-error);
+}
+
+.confirmed-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.transfer-bottom-actions {
+  display: flex;
+  gap: var(--space-sm);
+}

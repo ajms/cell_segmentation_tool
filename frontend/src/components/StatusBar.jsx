@@ -16,6 +16,10 @@ export function StatusBar({
   brushSize = 20,
   onToggleBrush,
   onToggleBrushMode,
+  // Transfer props
+  canStartTransfer = false,
+  onStartTransfer,
+  isTransferActive = false,
 }) {
   const canUseBrush = mode === 'select' && selectedCount === 1;
   return (
@@ -64,6 +68,26 @@ export function StatusBar({
               <div className="status-indicator points">
                 <span>{pointCount} point{pointCount !== 1 ? 's' : ''}</span>
               </div>
+            )}
+
+            {!isTransferActive && (
+              <>
+                <div className="status-divider" />
+                <button
+                  className="tool-toggle"
+                  onClick={onStartTransfer}
+                  disabled={!canStartTransfer}
+                  title={canStartTransfer ? 'Transfer labels from previous slice (T)' : 'No previous slice available'}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 3l4 4-4 4" />
+                    <path d="M3 11h18" />
+                    <path d="M7 21l-4-4 4-4" />
+                    <path d="M21 13H3" />
+                  </svg>
+                  <span>Transfer</span>
+                </button>
+              </>
             )}
           </>
         )}

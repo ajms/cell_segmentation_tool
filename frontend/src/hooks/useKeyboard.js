@@ -18,6 +18,11 @@ export function useKeyboard({
   onToggleBrushMode,
   onIncreaseBrushSize,
   onDecreaseBrushSize,
+  // Transfer mode callbacks
+  onStartTransfer,
+  onSkipTransfer,
+  onCancelTransfer,
+  isTransferActive = false,
   enabled = true,
 }) {
   const handleKeyDown = useCallback(
@@ -37,15 +42,29 @@ export function useKeyboard({
       const isCtrl = e.ctrlKey || e.metaKey;
       const isShift = e.shiftKey;
 
-      // Save: Enter
+      // Transfer mode: Cancel on Escape
+      if (e.key === 'Escape' && isTransferActive) {
+        e.preventDefault();
+        onCancelTransfer?.();
+        return;
+      }
+
+      // Transfer mode: Skip on Tab
+      if (e.key === 'Tab' && isTransferActive) {
+        e.preventDefault();
+        onSkipTransfer?.();
+        return;
+      }
+
+      // Save: Enter (also confirms transfer in transfer mode)
       if (e.key === 'Enter' && !isCtrl) {
         e.preventDefault();
         onSave?.();
         return;
       }
 
-      // Clear: Escape
-      if (e.key === 'Escape') {
+      // Clear: Escape (when not in transfer mode)
+      if (e.key === 'Escape' && !isTransferActive) {
         e.preventDefault();
         onClear?.();
         return;
@@ -135,6 +154,13 @@ export function useKeyboard({
         return;
       }
 
+      // Start transfer: T
+      if (key === 't' && !isCtrl && !isTransferActive) {
+        e.preventDefault();
+        onStartTransfer?.();
+        return;
+      }
+
       // Decrease brush size: [
       if (e.key === '[' && !isCtrl) {
         e.preventDefault();
@@ -175,6 +201,10 @@ export function useKeyboard({
       onToggleBrushMode,
       onIncreaseBrushSize,
       onDecreaseBrushSize,
+      onStartTransfer,
+      onSkipTransfer,
+      onCancelTransfer,
+      isTransferActive,
     ]
   );
 
@@ -201,6 +231,12 @@ export const KEYBOARD_SHORTCUTS = [
   { category: 'Mode', shortcuts: [
     { key: 'S', description: 'Toggle segment/select mode' },
     { key: 'Shift+Click', description: 'Multi-select (in select mode)' },
+  ]},
+  { category: 'Transfer', shortcuts: [
+    { key: 'T', description: 'Start label transfer from previous slice' },
+    { key: 'Enter', description: 'Confirm current transfer' },
+    { key: 'Tab', description: 'Skip current annotation' },
+    { key: 'Esc', description: 'Cancel transfer' },
   ]},
   { category: 'Brush Tool', shortcuts: [
     { key: 'B', description: 'Toggle brush tool (select mode)' },

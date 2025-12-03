@@ -5,3 +5,4 @@ export { AnnotationList } from './AnnotationList';
 export { KeyboardHelp } from './KeyboardHelp';
 export { StatusBar } from './StatusBar';
 export { ImageAdjustments } from './ImageAdjustments';
+export { TransferPanel } from './TransferPanel';

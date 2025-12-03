@@ -7,11 +7,13 @@ import {
   KeyboardHelp,
   StatusBar,
   ImageAdjustments,
+  TransferPanel,
   DEFAULT_CLASSES,
 } from './components';
 import { useSAM } from './hooks/useSAM';
 import { useAnnotations } from './hooks/useAnnotations';
 import { useKeyboard } from './hooks/useKeyboard';
+import { useTransfer } from './hooks/useTransfer';
 import { fetchImageInfo } from './utils/api';
 import './styles/App.css';
 
@@ -31,6 +33,7 @@ function App() {
   const [annotationCounts, setAnnotationCounts] = useState({});
   const [brightness, setBrightness] = useState(0);
   const [contrast, setContrast] = useState(1);
+  const [images, setImages] = useState([]);
 
   // Hooks
   const sam = useSAM();
@@ -46,6 +49,9 @@ function App() {
     canUndo,
     canRedo,
   } = useAnnotations(selectedImageId);
+
+  // Transfer hook
+  const transfer = useTransfer(selectedImageId, images, sam, annotations);
 
   // Update annotation counts
   useEffect(() => {
@@ -218,9 +224,34 @@ function App() {
     sam.resetEncoder();
   }, [sam]);
 
+  // Handle images loaded from ImageList
+  const handleImagesLoaded = useCallback((loadedImages) => {
+    setImages(loadedImages);
+  }, []);
+
+  // Save all confirmed transfers
+  const handleSaveAllTransfers = useCallback(async () => {
+    if (transfer.confirmedPreviews.length === 0) return;
+
+    try {
+      for (const preview of transfer.confirmedPreviews) {
+        await saveAnnotation(
+          preview.polygon,
+          preview.bbox,
+          preview.area,
+          preview.classId,
+          preview.className
+        );
+      }
+      transfer.cancelTransfer();
+    } catch (err) {
+      console.error('Failed to save transfers:', err);
+    }
+  }, [transfer.confirmedPreviews, saveAnnotation, transfer.cancelTransfer]);
+
   // Keyboard shortcuts
   useKeyboard({
-    onSave: handleSave,
+    onSave: transfer.isActive ? transfer.confirmCurrent : handleSave,
     onClear: handleClearPoints,
     onUndo: undo,
     onRedo: redo,
@@ -237,6 +268,10 @@ function App() {
     onToggleBrushMode: handleToggleBrushMode,
     onIncreaseBrushSize: handleIncreaseBrushSize,
     onDecreaseBrushSize: handleDecreaseBrushSize,
+    onStartTransfer: transfer.startTransfer,
+    onSkipTransfer: transfer.skipCurrent,
+    onCancelTransfer: transfer.cancelTransfer,
+    isTransferActive: transfer.isActive,
     enabled: !showHelp,
   });
 
@@ -278,6 +313,7 @@ function App() {
             selectedId={selectedImageId}
             onSelect={handleSelectImage}
             annotationCounts={annotationCounts}
+            onImagesLoaded={handleImagesLoaded}
           />
         </aside>
 
@@ -300,6 +336,8 @@ function App() {
             brushMode={brushMode}
             brushSize={brushSize}
             onBrushComplete={handleBrushComplete}
+            transferPoints={transfer.transferPoints}
+            sourceAnnotation={transfer.currentAnnotation}
           />
           <StatusBar
             isEncoding={sam.isEncoding}
@@ -319,10 +357,34 @@ function App() {
             brushSize={brushSize}
             onToggleBrush={handleToggleBrush}
             onToggleBrushMode={handleToggleBrushMode}
+            canStartTransfer={transfer.canStartTransfer}
+            onStartTransfer={transfer.startTransfer}
+            isTransferActive={transfer.isActive}
           />
         </section>
 
         <aside className="sidebar sidebar-right">
+          {transfer.isActive && (
+            <TransferPanel
+              isActive={transfer.isActive}
+              isLoading={transfer.isLoading}
+              error={transfer.error}
+              sourceAnnotations={transfer.sourceAnnotations}
+              currentIndex={transfer.currentIndex}
+              currentAnnotation={transfer.currentAnnotation}
+              confirmedPreviews={transfer.confirmedPreviews}
+              settings={transfer.settings}
+              onSettingsChange={transfer.updateSettings}
+              onConfirm={transfer.confirmCurrent}
+              onSkip={transfer.skipCurrent}
+              onPrev={transfer.prevAnnotation}
+              onSaveAll={handleSaveAllTransfers}
+              onCancel={transfer.cancelTransfer}
+              onRemoveConfirmed={transfer.removeConfirmed}
+              hasPreview={!!sam.preview}
+              allProcessed={transfer.allProcessed}
+            />
+          )}
           <ImageAdjustments
             brightness={brightness}
             contrast={contrast}

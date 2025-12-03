@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchImages, getImageUrl } from '../utils/api';
 
-export function ImageList({ selectedId, onSelect, annotationCounts = {} }) {
+export function ImageList({ selectedId, onSelect, annotationCounts = {}, onImagesLoaded }) {
   const [images, setImages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,6 +12,8 @@ export function ImageList({ selectedId, onSelect, annotationCounts = {} }) {
       try {
         const data = await fetchImages();
         setImages(data);
+        // Notify parent about loaded images
+        onImagesLoaded?.(data);
       } catch (err) {
         setError(err.message || 'Failed to load images');
       } finally {

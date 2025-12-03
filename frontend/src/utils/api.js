@@ -52,4 +52,13 @@ export const applyBrushToAnnotation = (annotationId, brushPath, brushRadius, ope
     operation,
   }).then((res) => res.data);
 
+// Transfer points generation
+export const generateTransferPoints = (segmentation, bbox, positiveCount, negativeCount) =>
+  api.post('/annotations/generate-points', {
+    segmentation,
+    bbox,
+    positive_count: positiveCount,
+    negative_count: negativeCount,
+  }).then((res) => res.data);
+
 export default api;

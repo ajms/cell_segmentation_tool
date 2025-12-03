@@ -28,6 +28,9 @@ export function ImageCanvas({
   brushMode = 'add',
   brushSize = 20,
   onBrushComplete,
+  // Transfer mode props
+  transferPoints = null,
+  sourceAnnotation = null,
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -119,24 +122,61 @@ export function ImageCanvas({
       overlayCtx.restore();
     }
 
+    // Draw source annotation ghost (for transfer mode)
+    if (sourceAnnotation) {
+      overlayCtx.save();
+      overlayCtx.translate(offset.x, offset.y);
+      overlayCtx.scale(scale, scale);
+
+      sourceAnnotation.segmentation.forEach((polygon) => {
+        // Faint dashed outline for source reference
+        overlayCtx.setLineDash([4, 4]);
+        drawPolygon(
+          overlayCtx,
+          polygon,
+          'rgba(128, 128, 128, 0.1)', // Very faint fill
+          'rgba(128, 128, 128, 0.5)', // Grey stroke
+          1
+        );
+        overlayCtx.setLineDash([]);
+      });
+
+      overlayCtx.restore();
+    }
+
     // Draw preview mask
     if (preview && preview.polygon) {
       overlayCtx.save();
       overlayCtx.translate(offset.x, offset.y);
       overlayCtx.scale(scale, scale);
 
-      const previewColor = getClassColor(currentClassId);
+      // Use source annotation's class color if in transfer mode, otherwise current class
+      const previewClassId = sourceAnnotation ? sourceAnnotation.class_id : currentClassId;
+      const previewColor = getClassColor(previewClassId);
       preview.polygon.forEach((polygon) => {
         // Dashed outline for preview
         overlayCtx.setLineDash([8, 4]);
         drawPolygon(
           overlayCtx,
           polygon,
-          getClassColorWithAlpha(currentClassId, 0.4),
+          getClassColorWithAlpha(previewClassId, 0.4),
           previewColor,
           2
         );
         overlayCtx.setLineDash([]);
+      });
+
+      overlayCtx.restore();
+    }
+
+    // Draw transfer points (auto-generated points during transfer)
+    if (transferPoints && transferPoints.length > 0) {
+      overlayCtx.save();
+      overlayCtx.translate(offset.x, offset.y);
+      overlayCtx.scale(scale, scale);
+
+      transferPoints.forEach((point) => {
+        drawPoint(overlayCtx, point.x, point.y, point.is_positive, 6 / scale);
       });
 
       overlayCtx.restore();
@@ -187,6 +227,8 @@ export function ImageCanvas({
     brushSize,
     brushMode,
     mousePos,
+    transferPoints,
+    sourceAnnotation,
   ]);
 
   // Redraw on changes
